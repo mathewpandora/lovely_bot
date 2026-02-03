@@ -41,7 +41,6 @@ async def create_valentine(body: ValentineCreate, db: AsyncSession = Depends(get
         text=body.text,
         track_link=body.track_link,
         recipient_id=body.recipient_id,
-        sender=body.sender,
     )
     db.add(val)
     await db.commit()
