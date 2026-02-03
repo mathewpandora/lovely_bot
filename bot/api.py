@@ -1,4 +1,3 @@
-import os
 import httpx
 from typing import Any
 
@@ -37,6 +36,7 @@ async def create_valentine(
     text: str,
     track_link: str,
     recipient_id: int,
+    sender: str | None = None,
     *,
     base_url: str = DEFAULT_BASE_URL,
     client: httpx.AsyncClient | None = None,
@@ -49,6 +49,7 @@ async def create_valentine(
             "text": text,
             "track_link": track_link,
             "recipient_id": recipient_id,
+            "sender": sender,
         }
         r = await client.post(f"{base_url}/valentines", json=body)
         if r.status_code == 404:
