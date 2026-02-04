@@ -10,7 +10,7 @@ from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 
 from api import APIError, create_valentine, get_credential, list_valentines_by_recipient
 
-START_TEXT = "Привет! Выбкри действие на кнопах:"
+START_TEXT = "Привет! Выбкри действие на кнопках:"
 
 
 class States(StatesGroup):
