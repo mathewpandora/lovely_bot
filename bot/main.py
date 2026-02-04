@@ -10,6 +10,22 @@ from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 
 from api import APIError, create_valentine, get_credential, list_valentines_by_recipient
 
+START_TEXT = """Приветик! Это Музыкальная почта для признания в любви от KMK&ITC💗
+Выбери подходящее действие:
+
+Для отправителя:
+-Пришли номер открытки 
+-Напиши текст послания и вставь ссылку песни, которая, как тебе кажется, идеально олицетворяет твоего возлюбленного! 
+-Классно! Твое признание в любви  отправлено!
+
+Для получателя:
+-Пришли номер своей открытки
+-Напиши пароль своего послания в любви 
+
+Если что, твой пароль указан под скретч-скотчем :)
+
+-Это признание в любви для тебя!! 💞⬇️:"""
+
 
 class States(StatesGroup):
     sending_card = State()
@@ -21,8 +37,8 @@ class States(StatesGroup):
 
 main_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Отправить")],
-        [KeyboardButton(text="Получить")],
+        [KeyboardButton(text="Отправить 💌")],
+        [KeyboardButton(text="Получить 🦢")],
     ],
     resize_keyboard=True,
 )
@@ -35,13 +51,13 @@ back_kb = ReplyKeyboardMarkup(
 
 async def on_start(message: Message, state: FSMContext) -> None:
     await state.clear()
-    await message.answer("Привет!", reply_markup=main_kb)
+    await message.answer(START_TEXT, reply_markup=main_kb)
 
 
 async def on_send_btn(message: Message, state: FSMContext) -> None:
     await state.set_state(States.sending_card)
     await state.set_data({})
-    await message.answer("Пришли номер открытки.", reply_markup=back_kb)
+    await message.answer("Пришли номер открытки", reply_markup=back_kb)
 
 
 async def on_sending_card(message: Message, state: FSMContext) -> None:
@@ -52,17 +68,26 @@ async def on_sending_card(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(recipient_id=card_number)
     await state.set_state(States.sending_text)
-    await message.answer("Напиши текст послания.", reply_markup=back_kb)
+    await message.answer("Напиши текст послания", reply_markup=back_kb)
 
 
 async def on_sending_text(message: Message, state: FSMContext) -> None:
     await state.update_data(text=(message.text or "").strip())
     await state.set_state(States.sending_track)
-    await message.answer("Пришли ссылку на любимый трек.", reply_markup=back_kb)
+    await message.answer("Вставь ссылку песни, которая, как тебе кажется, идеально олицетворяет твоего возлюбленного!", reply_markup=back_kb)
+
+
+def _is_link(s: str) -> bool:
+    t = (s or "").strip().lower()
+    return t.startswith("http://") or t.startswith("https://")
 
 
 async def on_sending_track(message: Message, state: FSMContext) -> None:
-    await state.update_data(track_link=(message.text or "").strip())
+    raw = (message.text or "").strip()
+    if not _is_link(raw):
+        await message.answer("Пока не пришлёшь ссылку — не продолжу. Пришли ссылку.", reply_markup=back_kb)
+        return
+    await state.update_data(track_link=raw)
     data = await state.get_data()
     await state.clear()
     try:
@@ -72,7 +97,7 @@ async def on_sending_track(message: Message, state: FSMContext) -> None:
             recipient_id=data["recipient_id"],
         )
         await message.answer(
-            f"Валентинка отправлена (id {val['id']}).",
+            f"Классно! Твое признание в любви  отправлено! (id {val['id']}).",
             reply_markup=main_kb,
         )
     except APIError as e:
@@ -85,7 +110,7 @@ async def on_sending_track(message: Message, state: FSMContext) -> None:
 async def on_get_btn(message: Message, state: FSMContext) -> None:
     await state.set_state(States.getting_id)
     await state.set_data({})
-    await message.answer("Введи id.", reply_markup=back_kb)
+    await message.answer("Пришли номер своей открытки", reply_markup=back_kb)
 
 
 async def on_getting_id(message: Message, state: FSMContext) -> None:
@@ -96,7 +121,7 @@ async def on_getting_id(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(credential_id=user_id)
     await state.set_state(States.getting_password)
-    await message.answer("Введи пароль.", reply_markup=back_kb)
+    await message.answer("Напиши пароль своего послания в любви", reply_markup=back_kb)
 
 
 async def on_getting_password(message: Message, state: FSMContext) -> None:
@@ -120,9 +145,14 @@ async def on_getting_password(message: Message, state: FSMContext) -> None:
     if not valentines:
         await message.answer("У тебя нет валентинок.", reply_markup=main_kb)
         return
-    for v in valentines:
-        await message.answer(f"{v.get('text', '')}\n{v.get('track_link', '')}")
-    await message.answer("Готово.", reply_markup=main_kb)
+    for i, v in enumerate(valentines):
+        text = v.get("text", "")
+        link = v.get("track_link", "")
+        is_last = i == len(valentines) - 1
+        await message.answer(
+            f"💌 Твое послание: {text}\n\nОбязательно послушай этот трек: {link}",
+            reply_markup=main_kb if is_last else None,
+        )
 
 
 async def on_back(message: Message, state: FSMContext) -> None:
@@ -138,8 +168,8 @@ async def main() -> None:
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.register(on_start, CommandStart())
     dp.message.register(on_back, F.text == "Назад")
-    dp.message.register(on_send_btn, F.text == "Отправить")
-    dp.message.register(on_get_btn, F.text == "Получить")
+    dp.message.register(on_send_btn, F.text == "Отправить 💌")
+    dp.message.register(on_get_btn, F.text == "Получить 🦢")
     dp.message.register(on_sending_card, StateFilter(States.sending_card), F.text)
     dp.message.register(on_sending_text, StateFilter(States.sending_text), F.text)
     dp.message.register(on_sending_track, StateFilter(States.sending_track), F.text)
