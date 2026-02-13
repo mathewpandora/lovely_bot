@@ -10,7 +10,7 @@ from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 
 from api import APIError, create_valentine, get_credential, list_valentines_by_recipient
 
-START_TEXT = "Привет! Выбкри действие на кнопках:"
+START_TEXT = "Выбери подходящее действие:"
 
 
 class States(StatesGroup):
@@ -60,7 +60,7 @@ async def on_sending_card(message: Message, state: FSMContext) -> None:
 async def on_sending_text(message: Message, state: FSMContext) -> None:
     await state.update_data(text=(message.text or "").strip())
     await state.set_state(States.sending_track)
-    await message.answer("Вставь ссылку песни, которая, как тебе кажется, идеально олицетворяет твоего возлюбленного!", reply_markup=back_kb)
+    await message.answer("Вставь ссылку на песню, которая, как тебе кажется, идеально олицетворяет твоего возлюбленного!🎶", reply_markup=back_kb)
 
 
 def _is_link(s: str) -> bool:
@@ -83,7 +83,7 @@ async def on_sending_track(message: Message, state: FSMContext) -> None:
             recipient_id=data["recipient_id"],
         )
         await message.answer(
-            f"Классно! Твое признание в любви  отправлено! (id {val['id']}).",
+            f"Классно! Твое признание в любви  отправлено!",
             reply_markup=main_kb,
         )
     except APIError as e:
