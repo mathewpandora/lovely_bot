@@ -107,7 +107,7 @@ async def on_getting_id(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(credential_id=user_id)
     await state.set_state(States.getting_password)
-    await message.answer("Напиши пароль своего послания в любви", reply_markup=back_kb)
+    await message.answer("Напиши пароль своего послания в любви. Если что, твой пароль указан под скретч-скотчем :)", reply_markup=back_kb)
 
 
 async def on_getting_password(message: Message, state: FSMContext) -> None:
